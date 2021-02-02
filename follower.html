@@ -1,0 +1,239 @@
+<html>
+
+<head>
+  <title>Follower</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <style>
+
+    input.playerName {
+      margin: 10;
+      margin-right: 20;
+      width: 180;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+      width: 50;
+    }
+
+    input {
+      padding: 8px 12px;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .btn,
+    [id=result] {
+      background-color: #4CAF50;
+      /* Green */
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      transition-duration: 0.4s;
+      cursor: pointer;
+      border-radius: 20%;
+    }
+
+    .up {
+      background-color: white;
+      color: black;
+      border: 2px solid #4CAF50;
+    }
+
+    .up:hover {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .down {
+      background-color: white;
+      color: black;
+      border: 2px solid #f44336;
+    }
+
+    .down:hover {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .bigbtn {
+      margin-left: 273px;
+    }
+
+    [id=result] {
+      border-radius: 0%;
+      margin: 10px;
+      background-color: white;
+      color: black;
+      border: 2px solid #008CBA;
+    }
+
+    [id=result]:hover {
+      background-color: #008CBA;
+      color: white;
+    }
+
+    body {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <button class="bigbtn down btn" onclick="btnAllDown()">&#9660; down</button>
+    <div class="playersName"></div>
+    <p title="Click To Copy" id="result" onclick="copy(this)">- - - -</p>
+  </div>
+</body>
+
+<template id="playersTemplate">
+  <div class="playerName">
+    <input class="playerName" type="text">
+    <button class="down btn" onclick="btnDown(this)">&#9660;</button>
+    <input type="number" class="rest" name="" value="0"><span> /</span>
+    <input type="number" class="payed" name="" value="0">
+    <button class="up btn" onclick="btnUp(this)">&#9650;</button>
+  </div>
+</template>
+
+<script>
+  var maxplayers = 6;
+
+  function getParams(obj) {
+    var rest, payed, playerName
+    if (!obj.className.includes("playerName")) {
+      obj = obj.parentElement
+    }
+    playerName = obj.getElementsByClassName('playerName')[0]
+    rest = obj.getElementsByClassName('rest')[0]
+    payed = obj.getElementsByClassName('payed')[0]
+    return { playerName: playerName, rest: rest, payed: payed }
+  }
+
+  function getPlayers() {
+    var players = document.getElementsByClassName('playersName')[0];
+    players = players.querySelectorAll('div');
+    var playersItems = []
+    for (let player of players)
+      playersItems.push(getParams(player));
+    return playersItems
+  }
+
+  function btnAllDown() {
+    var players = getPlayers();
+    for (let { playerName, rest, payed } of players) {
+      if (rest.value == 0 && playerName.value)
+        return alert('ra tsalaw l combat dial\n"' + playerName.value + '"');
+    }
+    for (let { playerName, rest, payed } of players) {
+      if (rest.value > 0)
+        rest.value--;
+    }
+    updateResult();
+  }
+
+  function btnDown(that) {
+    let { playerName, rest, payed } = getParams(that)
+    if (rest.value > 0)
+      rest.value--;
+    updateResult();
+  }
+
+  function btnUp(that) {
+    let { playerName, rest, payed } = getParams(that)
+    rest.value++;
+    payed.value++;
+    updateResult();
+  }
+
+  var result = document.getElementById('result')
+
+  function updateResult(save = true) {
+    var text = [];
+    for (let { playerName, rest, payed } of getPlayers()) {
+      if (playerName.value)
+        text.push(playerName.value + `(${rest.value}/${payed.value})`)
+    }
+    if (text.length == 0)
+      result.innerHTML = '- - - -'
+    else
+      result.innerHTML = text.join(" - ")
+    if (save)
+      saveInStorage()
+  }
+
+  function saveInStorage() {
+    var splayers = []
+    getPlayers().forEach(function (item, index) {
+      let { playerName, rest, payed } = item
+      let splayer = {}
+      splayer.playerName = playerName.value
+      splayer.rest = rest.value
+      splayer.payed = payed.value
+      splayers.push(splayer)
+    })
+    splayers = JSON.stringify(splayers);
+    if (splayers != localStorage.players) {
+      localStorage.players = splayers;
+    }
+  }
+
+  function startStorage() {
+    if (localStorage.players) {
+      splayers = JSON.parse(localStorage.players)
+      if (splayers.length != maxplayers) {
+        console.log('error maxplayer != localStorage, solving the problem');
+        saveInStorage();
+      }
+      else {
+        splayers = JSON.parse(localStorage.players)
+        getPlayers().forEach(function (item, index) {
+          let { playerName, rest, payed } = item
+          let splayer = splayers[index]
+          playerName.value = splayer.playerName
+          rest.value = splayer.rest
+          payed.value = splayer.payed
+        })
+        updateResult(save = false)
+      }
+    }
+    else {
+      console.log('no storage, creating a new one');
+      saveInStorage();
+    }
+  }
+
+  function populate() {
+    var i, temp, item, dest, node;
+    dest = document.getElementsByClassName('playersName')[0];
+    temp = document.getElementById('playersTemplate');
+    for (i = 1; i <= maxplayers; i++) {
+      item = temp.content.cloneNode(true);
+      item.querySelector('div').className += i;
+      dest.appendChild(item);
+    }
+  }
+  populate()
+  startStorage()
+
+  function copy(that) {
+    updateResult()
+    var inp = document.createElement('input');
+    document.body.appendChild(inp)
+    inp.value = that.textContent
+    inp.select();
+    document.execCommand('copy', false);
+    inp.remove();
+  }
+
+</script>
+
+</html>
